@@ -32,7 +32,7 @@ EXTENSIONS = ["avi", "mpg", "mp4", "mkv"]
 # -o : output [local|hdmi]
 # -t : enable subtitles [on|off]
 # --align : subtitles aligment [center|left|right]
-OPTIONS = '-o local -t on --align center'
+OPTIONS = '-o hdmi -t on --align center'
 
 K_NEXT="k"
 K_PREV="i"
@@ -42,6 +42,7 @@ K_PLAY="p"
 K_SCAN="R"
 K_QUIT="Q"
 K_FIND="f"
+K_RAND="r"
 
 import curses
 from sys import argv
@@ -51,6 +52,7 @@ from os.path import isfile
 from os.path import isdir
 from os.path import expanduser
 from os.path import basename
+from random import randrange
 
 
 def play(movie):
@@ -129,7 +131,7 @@ class PiMP(object):
 
     def parse_args(self):
         "Parse command line parameters."
-        self.dir_movies = expanduser("~/movies")
+        self.dir_movies = expanduser("~/videos")
         for a in argv:
             if isdir(a):
                 self.dir_movies = a
@@ -189,7 +191,7 @@ class PiMP(object):
         options = " - " + K_PLAY + ":Play " + K_SCAN + ":Refresh "
         options += K_PREV + ":Up " + K_NEXT + ":Down " + K_PPAG 
         options += ":PUp " + K_NPAG + ":PDown " + K_FIND + ":Find "
-        options += K_QUIT + ":Quit"
+        options += K_RAND + ":Random " + K_QUIT + ":Quit"
         title = "PiMP V" + str(VERSION) + options
         self.draw_line_of_text(0, title, curses.A_REVERSE)
         # List of movies
@@ -254,11 +256,8 @@ class PiMP(object):
         if self.cursor['current'] >= self.cursor['show'] + self.cursor['first']:
             self.cursor['first'] += nb_lines
 
-
-    def play_selected_movie(self):
-        "Play selected movie."
-        movie = None
-        movie = self.dic_movies[self.lst_movies[self.cursor['current']]]
+    def play_movie(self, movie):
+        "Play a movie"
         if movie:
             self.stdscr.clear()
             self.stdscr.refresh()
@@ -266,6 +265,22 @@ class PiMP(object):
             self.draw_status("End of movie ({0}).".format(res), True)
         else:
             self.draw_status("Oops! Cannot play selected movie.", True)
+
+    def play_selected_movie(self):
+        "Play selected movie."
+        movie = None
+        movie = self.dic_movies[self.lst_movies[self.cursor['current']]]
+        self.play_movie(movie)
+            
+    def play_random_movie(self):
+        "play random movie"
+        movie = None
+        movie = self.dic_movies[self.lst_movies[randrange(len(self.lst_movies))]]
+        if movie:
+            self.stdscr.clear()
+            self.stdscr.refresh()
+            res = play(movie)
+            self.draw_status("End of movie ({0}).".format(res), True)
 
 
     def find_and_scroll(self):
@@ -308,6 +323,8 @@ class PiMP(object):
                 break
             elif ch == ord(K_FIND):
                 self.find_and_scroll()
+            elif ch == ord(K_RAND):
+                self.play_random_movie()
             self.draw_window()
 
 
